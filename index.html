@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VIRAL CODER OS // Master Command Suite</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        :root {
+            --bg-base: #060913;
+            --panel-bg: rgba(13, 20, 38, 0.85);
+            --panel-border: rgba(255, 255, 255, 0.08);
+            --cyan-accent: #00f3ff;
+            --pink-accent: #ff007f;
+            --emerald-accent: #10b981;
+            --amber-accent: #f59e0b;
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            background-color: var(--bg-base);
+            color: var(--text-primary);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+        }
+
+        /* Ambient Glow Backdrop */
+        .ambient-glow {
+            position: fixed;
+            top: -20%;
+            left: 20%;
+            width: 600px;
+            height: 600px;
+            background: radial-gradient(circle, rgba(0, 243, 255, 0.12) 0%, rgba(255, 0, 127, 0.08) 50%, transparent 70%);
+            filter: blur(90px);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        header {
+            background: rgba(10, 15, 30, 0.85);
+            backdrop-filter: blur(16px);
+            border-bottom: 1px solid var(--panel-border);
+            padding: 1.25rem 2.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 50;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .brand-icon {
+            width: 44px;
+            height: 44px;
+            border-radius: 10px;
+            background: linear-gradient(135deg, var(--cyan-accent), var(--pink-accent));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.4rem;
+            color: #000;
+            box-shadow: 0 0 20px rgba(0, 243, 255, 0.4);
+        }
+
+        .brand-text h1 {
+            font-size: 1.35rem;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+        }
+
+        .status-pill {
+            background: rgba(16, 185, 129, 0.15);
+            color: var(--emerald-accent);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            padding: 0.2rem 0.6rem;
+            border-radius: 9999px;
+            font-size: 0.72rem;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+        }
+
+        .container {
+            max-width: 1440px;
+            margin: 0 auto;
+            padding: 2.5rem 2rem;
+            position: relative;
+            z-index: 10;
+            display: flex;
+            flex-direction: column;
+            gap: 2.5rem;
+            width: 100%;
+        }
+
+        .hero-banner {
+            background: linear-gradient(135deg, rgba(13, 20, 38, 0.95), rgba(20, 30, 58, 0.85));
+            border: 1px solid rgba(0, 243, 255, 0.2);
+            border-radius: 20px;
+            padding: 2rem 2.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1.5rem;
+            box-shadow: 0 15px 40px rgba(0,0,0,0.4);
+        }
+
+        .hero-info h2 {
+            font-size: 2rem;
+            font-weight: 800;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(to right, #ffffff, #cbd5e1);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .hero-info p {
+            color: var(--text-secondary);
+            font-size: 1.05rem;
+            max-width: 700px;
+            line-height: 1.6;
+        }
+
+        .stats-summary {
+            display: flex;
+            gap: 1.5rem;
+        }
+
+        .stat-card {
+            background: rgba(6, 9, 19, 0.7);
+            border: 1px solid var(--panel-border);
+            padding: 1rem 1.4rem;
+            border-radius: 12px;
+            text-align: center;
+        }
+
+        .stat-num {
+            font-size: 1.6rem;
+            font-weight: 800;
+            color: var(--cyan-accent);
+        }
+
+        .stat-label {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-top: 0.2rem;
+        }
+
+        /* SECTION HEADERS */
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.25rem;
+        }
+
+        .section-title {
+            font-size: 1.35rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+        }
+
+        .cards-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .suite-card {
+            background: var(--panel-bg);
+            border: 1px solid var(--panel-border);
+            border-radius: 16px;
+            padding: 1.75rem;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            gap: 1.25rem;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .suite-card:hover {
+            transform: translateY(-4px);
+            border-color: rgba(0, 243, 255, 0.4);
+            box-shadow: 0 15px 35px rgba(0, 243, 255, 0.1);
+        }
+
+        .card-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+        }
+
+        .card-icon-box {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.3rem;
+        }
+
+        .card-badge {
+            font-size: 0.72rem;
+            padding: 0.25rem 0.6rem;
+            border-radius: 6px;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        .card-body h3 {
+            font-size: 1.25rem;
+            margin-bottom: 0.5rem;
+            color: #f1f5f9;
+        }
+
+        .card-body p {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            line-height: 1.5;
+        }
+
+        .card-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.4rem;
+            margin-top: 0.8rem;
+        }
+
+        .tag {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            color: #cbd5e1;
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+        }
+
+        .card-actions {
+            display: flex;
+            gap: 0.75rem;
+            margin-top: 0.5rem;
+        }
+
+        .btn {
+            cursor: pointer;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.88rem;
+            padding: 0.6rem 1.1rem;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            text-decoration: none;
+        }
+
+        .btn-launch {
+            background: linear-gradient(135deg, #00f3ff, #0284c7);
+            color: #000;
+            font-weight: 700;
+        }
+        .btn-launch:hover {
+            box-shadow: 0 0 15px rgba(0, 243, 255, 0.4);
+            transform: scale(1.02);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.08);
+            color: #f8fafc;
+            border: 1px solid rgba(255, 255, 255, 0.12);
+        }
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.14);
+        }
+
+        /* LIVE VIEWER FRAME */
+        .viewer-section {
+            background: var(--panel-bg);
+            border: 1px solid var(--panel-border);
+            border-radius: 20px;
+            padding: 1.5rem;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+        }
+
+        .viewer-toolbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+        }
+
+        .tabs-group {
+            display: flex;
+            gap: 0.5rem;
+            background: rgba(6, 9, 19, 0.6);
+            padding: 0.3rem;
+            border-radius: 10px;
+            border: 1px solid var(--panel-border);
+            overflow-x: auto;
+        }
+
+        .tab-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            font-size: 0.82rem;
+            font-weight: 600;
+            padding: 0.45rem 0.9rem;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+
+        .tab-btn.active {
+            background: var(--cyan-accent);
+            color: #000;
+            font-weight: 700;
+            box-shadow: 0 0 10px rgba(0, 243, 255, 0.3);
+        }
+
+        .iframe-wrapper {
+            width: 100%;
+            height: 640px;
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: #000;
+            overflow: hidden;
+            position: relative;
+        }
+
+        iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+
+        footer {
+            margin-top: auto;
+            text-align: center;
+            padding: 2rem;
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+            border-top: 1px solid var(--panel-border);
+        }
+    </style>
+</head>
+<body>
+    <div class="ambient-glow"></div>
+
+    <header>
+        <div class="brand">
+            <div class="brand-icon">
+                <i class="fa-solid fa-code"></i>
+            </div>
+            <div class="brand-text">
+                <h1>VIRAL CODER OS <span class="status-pill">● All Engines Active</span></h1>
+            </div>
+        </div>
+        <div style="display:flex; gap:1rem; align-items:center;">
+            <span style="font-size:0.85rem; color:var(--text-secondary);">Inspired by Mukul Raghav (@viral.coder)</span>
+        </div>
+    </header>
+
+    <div class="container">
+        <!-- HERO BANNER -->
+        <div class="hero-banner">
+            <div class="hero-info">
+                <h2>The Complete Viral Coder Command Center</h2>
+                <p>Everything siphoned simultaneously: high-ticket monetization workflows for freelance client acquisition and micro-SaaS, paired with viral portfolio showstoppers.</p>
+            </div>
+            <div class="stats-summary">
+                <div class="stat-card">
+                    <div class="stat-num" style="color:var(--emerald-accent);">3</div>
+                    <div class="stat-label">Money Engines</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-num" style="color:var(--pink-accent);">3</div>
+                    <div class="stat-label">Fun Flex Apps</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-num" style="color:var(--cyan-accent);">100%</div>
+                    <div class="stat-label">Deployable</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- LIVE WORKSPACE VIEWER -->
+        <div class="viewer-section">
+            <div class="viewer-toolbar">
+                <div style="display:flex; align-items:center; gap:0.6rem;">
+                    <i class="fa-solid fa-display" style="color:var(--cyan-accent);"></i>
+                    <strong style="font-size:1.05rem;">Live Interactive Sandbox</strong>
+                </div>
+                <div class="tabs-group">
+                    <button class="tab-btn active" onclick="loadFrame('money-makers/02-ai-ats-optimizer/index.html', this)"><i class="fa-solid fa-bolt"></i> ATS Resume AI</button>
+                    <button class="tab-btn" onclick="loadFrame('money-makers/01-lead-scraper-audit/audit_report.html', this)"><i class="fa-solid fa-magnifying-glass-dollar"></i> Client Lead Radar</button>
+                    <button class="tab-btn" onclick="loadFrame('fun-showcase/01-cyber-terminal-os/index.html', this)"><i class="fa-solid fa-terminal"></i> Cyber Hacker OS</button>
+                    <button class="tab-btn" onclick="loadFrame('fun-showcase/02-particle-galaxy/index.html', this)"><i class="fa-solid fa-atom"></i> Particle Nebula</button>
+                    <button class="tab-btn" onclick="loadFrame('fun-showcase/03-neon-arcade/index.html', this)"><i class="fa-solid fa-gamepad"></i> Neon Arcade Arena</button>
+                </div>
+                <button class="btn btn-secondary" onclick="openCurrentInNewTab()"><i class="fa-solid fa-arrow-up-right-from-square"></i> Fullscreen</button>
+            </div>
+            <div class="iframe-wrapper">
+                <iframe id="appFrame" src="money-makers/02-ai-ats-optimizer/index.html"></iframe>
+            </div>
+        </div>
+
+        <!-- MONEY-MAKING ENGINES -->
+        <div>
+            <div class="section-header">
+                <div class="section-title">
+                    <i class="fa-solid fa-sack-dollar" style="color:var(--emerald-accent);"></i>
+                    <span>Category 1: The Money-Making Suite</span>
+                </div>
+                <span class="status-pill" style="border-color:rgba(16,185,129,0.4); color:var(--emerald-accent);">High ROI • Commercial Ready</span>
+            </div>
+
+            <div class="cards-grid">
+                <!-- M1 -->
+                <div class="suite-card">
+                    <div>
+                        <div class="card-top">
+                            <div class="card-icon-box" style="background:rgba(16,185,129,0.15); color:var(--emerald-accent);">
+                                <i class="fa-solid fa-compass"></i>
+                            </div>
+                            <span class="card-badge" style="background:rgba(16,185,129,0.2); color:#34d399;">$500 - $1,500 / Client</span>
+                        </div>
+                        <div class="card-body" style="margin-top:1rem;">
+                            <h3>Local Business Lead Scraper & Cold Audit Pitcher</h3>
+                            <p>Scrapes high-rated local businesses that lack websites, mobile optimization, or SSL certificates. Auto-generates personalized cold pitch emails and technical audit scorecards.</p>
+                            <div class="card-tags">
+                                <span class="tag">Python</span>
+                                <span class="tag">Lead Scraper</span>
+                                <span class="tag">HTML Audit Report</span>
+                                <span class="tag">Cold Outreach</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-actions">
+                        <button class="btn btn-launch" onclick="loadFrame('money-makers/01-lead-scraper-audit/audit_report.html')"><i class="fa-solid fa-eye"></i> View Radar</button>
+                        <a href="money-makers/01-lead-scraper-audit/audit_report.html" target="_blank" class="btn btn-secondary"><i class="fa-solid fa-arrow-up-right-from-square"></i> Open</a>
+                    </div>
+                </div>
+
+                <!-- M2 -->
+                <div class="suite-card">
+                    <div>
+                        <div class="card-top">
+                            <div class="card-icon-box" style="background:rgba(6,182,212,0.15); color:var(--cyan-accent);">
+                                <i class="fa-solid fa-wand-magic-sparkles"></i>
+                            </div>
+                            <span class="card-badge" style="background:rgba(6,182,212,0.2); color:#38bdf8;">$9 - $19 / Mo Micro-SaaS</span>
+                        </div>
+                        <div class="card-body" style="margin-top:1rem;">
+                            <h3>AI ATS Resume Optimizer & Keyword Scanner</h3>
+                            <p>Full-stack standalone Micro-SaaS. Scans resumes against target job postings, computes real-time ATS score, isolates missing critical keywords, and enhances weak bullets using Google's X-Y-Z formula.</p>
+                            <div class="card-tags">
+                                <span class="tag">Micro-SaaS</span>
+                                <span class="tag">JavaScript</span>
+                                <span class="tag">Gemini AI Ready</span>
+                                <span class="tag">ATS Algorithm</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-actions">
+                        <button class="btn btn-launch" onclick="loadFrame('money-makers/02-ai-ats-optimizer/index.html')"><i class="fa-solid fa-bolt"></i> Test SaaS</button>
+                        <a href="money-makers/02-ai-ats-optimizer/index.html" target="_blank" class="btn btn-secondary"><i class="fa-solid fa-arrow-up-right-from-square"></i> Open</a>
+                    </div>
+                </div>
+
+                <!-- M3 -->
+                <div class="suite-card">
+                    <div>
+                        <div class="card-top">
+                            <div class="card-icon-box" style="background:rgba(245,158,11,0.15); color:var(--amber-accent);">
+                                <i class="fa-solid fa-clapperboard"></i>
+                            </div>
+                            <span class="card-badge" style="background:rgba(245,158,11,0.2); color:#fbbf24;">Audience & Lead Gen</span>
+                        </div>
+                        <div class="card-body" style="margin-top:1rem;">
+                            <h3>Viral Content Carousel & Reel Script Generator</h3>
+                            <p>The exact production pipeline powering creators like @viral.coder. Generates 30-second retention-hacked scripts, 6-slide carousel layouts, captions, hashtags, and ManyChat auto-DM trigger setup.</p>
+                            <div class="card-tags">
+                                <span class="tag">Python</span>
+                                <span class="tag">Reel Scripts</span>
+                                <span class="tag">ManyChat DM Triggers</span>
+                                <span class="tag">Growth Formula</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-actions">
+                        <a href="money-makers/03-viral-content-engine/viral_packet.md" target="_blank" class="btn btn-secondary" style="flex:1;"><i class="fa-solid fa-file-code"></i> View Production Packet</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- FUN SHOWCASE ENGINES -->
+        <div>
+            <div class="section-header">
+                <div class="section-title">
+                    <i class="fa-solid fa-fire" style="color:var(--pink-accent);"></i>
+                    <span>Category 2: The Fun & Viral Flex Showcase</span>
+                </div>
+                <span class="status-pill" style="border-color:rgba(255,0,127,0.4); color:var(--pink-accent);">High Visual Flex • 100% Interactive</span>
+            </div>
+
+            <div class="cards-grid">
+                <!-- F1 -->
+                <div class="suite-card">
+                    <div>
+                        <div class="card-top">
+                            <div class="card-icon-box" style="background:rgba(0,255,102,0.15); color:#00ff66;">
+                                <i class="fa-solid fa-terminal"></i>
+                            </div>
+                            <span class="card-badge" style="background:rgba(0,255,102,0.2); color:#00ff66;">Retro Hacker OS</span>
+                        </div>
+                        <div class="card-body" style="margin-top:1rem;">
+                            <h3>Retro Cyber Hacker Terminal OS</h3>
+                            <p>Authentic green CRT scanlines, mechanical typing sound synthesizer via Web Audio API, Matrix digital rain animation, and Hollywood hacking simulator (`hack-nasa`, `scan`, `crypto`, `quote`).</p>
+                            <div class="card-tags">
+                                <span class="tag">CRT Scanlines</span>
+                                <span class="tag">Web Audio API</span>
+                                <span class="tag">Matrix Rain</span>
+                                <span class="tag">Shell Commands</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-actions">
+                        <button class="btn btn-launch" onclick="loadFrame('fun-showcase/01-cyber-terminal-os/index.html')"><i class="fa-solid fa-terminal"></i> Launch Shell</button>
+                        <a href="fun-showcase/01-cyber-terminal-os/index.html" target="_blank" class="btn btn-secondary"><i class="fa-solid fa-arrow-up-right-from-square"></i> Open</a>
+                    </div>
+                </div>
+
+                <!-- F2 -->
+                <div class="suite-card">
+                    <div>
+                        <div class="card-top">
+                            <div class="card-icon-box" style="background:rgba(56,189,248,0.15); color:#38bdf8;">
+                                <i class="fa-solid fa-atom"></i>
+                            </div>
+                            <span class="card-badge" style="background:rgba(56,189,248,0.2); color:#38bdf8;">Physics Engine</span>
+                        </div>
+                        <div class="card-body" style="margin-top:1rem;">
+                            <h3>Quantum Particle Nebula & Gravity Sandbox</h3>
+                            <p>Real-time physics canvas simulating 200+ particle starlights. Features mouse gravity wells, constellation networking lines, supernova explosions on click, and live HUD controls.</p>
+                            <div class="card-tags">
+                                <span class="tag">HTML5 Canvas</span>
+                                <span class="tag">Physics Simulation</span>
+                                <span class="tag">Mouse Gravity</span>
+                                <span class="tag">Supernova FX</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-actions">
+                        <button class="btn btn-launch" onclick="loadFrame('fun-showcase/02-particle-galaxy/index.html')"><i class="fa-solid fa-atom"></i> Launch Nebula</button>
+                        <a href="fun-showcase/02-particle-galaxy/index.html" target="_blank" class="btn btn-secondary"><i class="fa-solid fa-arrow-up-right-from-square"></i> Open</a>
+                    </div>
+                </div>
+
+                <!-- F3 -->
+                <div class="suite-card">
+                    <div>
+                        <div class="card-top">
+                            <div class="card-icon-box" style="background:rgba(255,0,127,0.15); color:var(--pink-accent);">
+                                <i class="fa-solid fa-gamepad"></i>
+                            </div>
+                            <span class="card-badge" style="background:rgba(255,0,127,0.2); color:#ff70b8;">Arcade Arena</span>
+                        </div>
+                        <div class="card-body" style="margin-top:1rem;">
+                            <h3>Cyberpunk Reflex Arcade Arena</h3>
+                            <p>Fast-paced retro neon reflex game. Features motion glow trails, dynamic screen shake impact camera, arcade 8-bit sound synthesizer, combo multipliers, and persistent high scores.</p>
+                            <div class="card-tags">
+                                <span class="tag">Canvas Game</span>
+                                <span class="tag">Sound FX Synth</span>
+                                <span class="tag">Screen Shake</span>
+                                <span class="tag">Score Engine</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-actions">
+                        <button class="btn btn-launch" onclick="loadFrame('fun-showcase/03-neon-arcade/index.html')"><i class="fa-solid fa-play"></i> Play Arena</button>
+                        <a href="fun-showcase/03-neon-arcade/index.html" target="_blank" class="btn btn-secondary"><i class="fa-solid fa-arrow-up-right-from-square"></i> Open</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        VIRAL CODER SUITE • Built locally at <code>C:\Users\joenj\.gemini\antigravity\scratch\viral-coder-suite</code>
+    </footer>
+
+    <script>
+        let currentUrl = 'money-makers/02-ai-ats-optimizer/index.html';
+
+        function loadFrame(url, btnElement) {
+            currentUrl = url;
+            document.getElementById('appFrame').src = url;
+
+            if (btnElement) {
+                document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                btnElement.classList.add('active');
+            }
+            window.scrollTo({ top: 320, behavior: 'smooth' });
+        }
+
+        function openCurrentInNewTab() {
+            window.open(currentUrl, '_blank');
+        }
+    </script>
+</body>
+</html>

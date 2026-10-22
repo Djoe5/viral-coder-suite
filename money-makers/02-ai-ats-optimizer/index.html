@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI ATS Resume Optimizer & Keyword Scanner</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        :root {
+            --bg-dark: #0a0f1d;
+            --card-bg: #111a2e;
+            --accent-cyan: #06b6d4;
+            --accent-emerald: #10b981;
+            --accent-amber: #f59e0b;
+            --accent-rose: #f43f5e;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --border-color: #1e293b;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background: var(--bg-dark);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        header {
+            background: rgba(17, 26, 46, 0.85);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--border-color);
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 50;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-weight: 700;
+            font-size: 1.25rem;
+            letter-spacing: -0.5px;
+        }
+
+        .brand i { color: var(--accent-cyan); font-size: 1.5rem; }
+        .badge {
+            background: rgba(6, 182, 212, 0.15);
+            color: var(--accent-cyan);
+            border: 1px solid rgba(6, 182, 212, 0.3);
+            padding: 0.2rem 0.6rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .main-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            flex: 1;
+            width: 100%;
+        }
+
+        @media (max-width: 1024px) {
+            .main-container { grid-template-columns: 1fr; }
+        }
+
+        .card {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 14px;
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1.25rem;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .card-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #e2e8f0;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        button {
+            cursor: pointer;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.85rem;
+            padding: 0.5rem 0.9rem;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+
+        .btn-ghost {
+            background: transparent;
+            color: var(--text-muted);
+            border: 1px solid var(--border-color);
+        }
+        .btn-ghost:hover {
+            color: var(--text-main);
+            background: rgba(255,255,255,0.05);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #06b6d4, #3b82f6);
+            color: white;
+            box-shadow: 0 4px 15px rgba(6, 182, 212, 0.3);
+        }
+        .btn-primary:hover {
+            opacity: 0.95;
+            transform: translateY(-1px);
+        }
+
+        textarea {
+            width: 100%;
+            height: 240px;
+            background: #080d19;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 1rem;
+            color: #cbd5e1;
+            font-family: inherit;
+            font-size: 0.9rem;
+            resize: vertical;
+            line-height: 1.5;
+            outline: none;
+        }
+        textarea:focus {
+            border-color: var(--accent-cyan);
+            box-shadow: 0 0 0 2px rgba(6, 182, 212, 0.2);
+        }
+
+        .score-panel {
+            grid-column: 1 / -1;
+            background: linear-gradient(135deg, #0f172a, #131d35);
+            border: 1px solid #1e293b;
+            border-radius: 16px;
+            padding: 1.5rem 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-around;
+            flex-wrap: wrap;
+            gap: 1.5rem;
+        }
+
+        .gauge-wrap {
+            display: flex;
+            align-items: center;
+            gap: 1.25rem;
+        }
+
+        .gauge-circle {
+            width: 90px;
+            height: 90px;
+            border-radius: 50%;
+            background: conic-gradient(var(--accent-emerald) calc(var(--score-pct) * 1%), #1e293b 0);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+
+        .gauge-circle::before {
+            content: '';
+            position: absolute;
+            width: 72px;
+            height: 72px;
+            border-radius: 50%;
+            background: #0f172a;
+        }
+
+        .gauge-value {
+            position: relative;
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: var(--text-main);
+        }
+
+        .metric-box {
+            text-align: center;
+        }
+        .metric-box .label { font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase; margin-bottom: 0.25rem; }
+        .metric-box .val { font-size: 1.3rem; font-weight: 700; color: #f1f5f9; }
+
+        .keywords-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+
+        .pill-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.4rem;
+            margin-top: 0.5rem;
+        }
+
+        .pill {
+            padding: 0.25rem 0.6rem;
+            border-radius: 6px;
+            font-size: 0.78rem;
+            font-weight: 500;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.3rem;
+        }
+        .pill-match { background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); }
+        .pill-missing { background: rgba(244, 63, 94, 0.15); color: #fb7185; border: 1px solid rgba(244, 63, 94, 0.3); }
+
+        .bullet-enhancer-box {
+            background: #090e1a;
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            padding: 1.25rem;
+        }
+        .bullet-input-wrap {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+        .bullet-input {
+            flex: 1;
+            background: #111a2e;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 0.6rem 0.9rem;
+            color: white;
+            font-size: 0.88rem;
+        }
+        .bullet-result {
+            background: rgba(6, 182, 212, 0.08);
+            border: 1px solid rgba(6, 182, 212, 0.2);
+            border-radius: 8px;
+            padding: 1rem;
+            font-size: 0.9rem;
+            color: #e0f2fe;
+            line-height: 1.5;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="brand">
+            <i class="fa-solid fa-bolt-lightning"></i>
+            <span>ATS Killer AI</span>
+            <span class="badge">Micro-SaaS Engine</span>
+        </div>
+        <div class="btn-group">
+            <button class="btn-ghost" onclick="loadSampleData()"><i class="fa-solid fa-wand-magic-sparkles"></i> Load Demo Data</button>
+            <button class="btn-primary" onclick="analyzeMatch()"><i class="fa-solid fa-magnifying-glass-chart"></i> Run ATS Audit</button>
+        </div>
+    </header>
+
+    <div class="main-container">
+        <!-- SCORE PANEL -->
+        <div class="score-panel" id="scorePanel">
+            <div class="gauge-wrap">
+                <div class="gauge-circle" id="gauge" style="--score-pct: 78;">
+                    <div class="gauge-value" id="gaugeVal">78%</div>
+                </div>
+                <div>
+                    <h3 style="font-size: 1.2rem; color:#f1f5f9;">ATS Match Score</h3>
+                    <p style="color:var(--text-muted); font-size: 0.85rem;" id="scoreSummary">Strong match. Passing automated screeners.</p>
+                </div>
+            </div>
+
+            <div class="metric-box">
+                <div class="label">Keywords Matched</div>
+                <div class="val" id="matchedCount" style="color:var(--accent-emerald);">14</div>
+            </div>
+
+            <div class="metric-box">
+                <div class="label">Critical Gaps</div>
+                <div class="val" id="missingCount" style="color:var(--accent-rose);">4</div>
+            </div>
+
+            <div class="metric-box">
+                <div class="label">Action Verbs & Impact</div>
+                <div class="val" style="color:var(--accent-cyan);">High (8/10)</div>
+            </div>
+        </div>
+
+        <!-- INPUT 1: RESUME -->
+        <div class="card">
+            <div class="card-header">
+                <span class="card-title"><i class="fa-regular fa-file-lines" style="color:var(--accent-cyan);"></i> Candidate Resume</span>
+                <span style="font-size: 0.8rem; color:var(--text-muted);">Plain Text or Markdown</span>
+            </div>
+            <textarea id="resumeInput" placeholder="Paste your resume content here..."></textarea>
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+                <span style="font-size:0.8rem; color:var(--text-muted);" id="resumeWordCount">0 words</span>
+                <button class="btn-ghost" style="padding:0.35rem 0.7rem;" onclick="clearResume()"><i class="fa-solid fa-trash-can"></i> Clear</button>
+            </div>
+        </div>
+
+        <!-- INPUT 2: JOB DESCRIPTION -->
+        <div class="card">
+            <div class="card-header">
+                <span class="card-title"><i class="fa-solid fa-briefcase" style="color:#a855f7;"></i> Target Job Description</span>
+                <span style="font-size: 0.8rem; color:var(--text-muted);">Role Requirements</span>
+            </div>
+            <textarea id="jobInput" placeholder="Paste target job posting description here..."></textarea>
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+                <span style="font-size:0.8rem; color:var(--text-muted);" id="jobWordCount">0 words</span>
+                <button class="btn-ghost" style="padding:0.35rem 0.7rem;" onclick="clearJob()"><i class="fa-solid fa-trash-can"></i> Clear</button>
+            </div>
+        </div>
+
+        <!-- KEYWORDS BREAKDOWN -->
+        <div class="card" style="grid-column: 1 / -1;">
+            <div class="card-header">
+                <span class="card-title"><i class="fa-solid fa-tags" style="color:var(--accent-amber);"></i> Keyword Frequency & ATS Optimization Analysis</span>
+            </div>
+            <div class="keywords-grid">
+                <div>
+                    <h4 style="color:var(--accent-emerald); font-size:0.9rem; margin-bottom:0.5rem;"><i class="fa-solid fa-check"></i> Found in Resume</h4>
+                    <div class="pill-list" id="foundPills">
+                        <span class="pill pill-match">React</span>
+                        <span class="pill pill-match">TypeScript</span>
+                        <span class="pill pill-match">Node.js</span>
+                        <span class="pill pill-match">REST APIs</span>
+                        <span class="pill pill-match">Tailwind CSS</span>
+                    </div>
+                </div>
+
+                <div>
+                    <h4 style="color:var(--accent-rose); font-size:0.9rem; margin-bottom:0.5rem;"><i class="fa-solid fa-triangle-exclamation"></i> Missing Keywords (Add to Pass Filter)</h4>
+                    <div class="pill-list" id="missingPills">
+                        <span class="pill pill-missing">+ Docker</span>
+                        <span class="pill pill-missing">+ GraphQL</span>
+                        <span class="pill pill-missing">+ CI/CD Pipeline</span>
+                        <span class="pill pill-missing">+ Unit Testing</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- BULLET POINT AI ENHANCER -->
+        <div class="card" style="grid-column: 1 / -1;">
+            <div class="card-header">
+                <span class="card-title"><i class="fa-solid fa-wand-magic-sparkles" style="color:var(--accent-cyan);"></i> High-Impact Resume Bullet Rewriter (X-Y-Z Formula)</span>
+                <span class="badge">Google X-Y-Z Standard</span>
+            </div>
+            <div class="bullet-enhancer-box">
+                <p style="font-size:0.85rem; color:var(--text-muted); margin-bottom:0.75rem;">Type a weak bullet point (e.g. <em>"Helped build frontend web pages for clients"</em>) to re-engineer it into an executive-level metric-backed bullet:</p>
+                <div class="bullet-input-wrap">
+                    <input type="text" id="weakBulletInput" class="bullet-input" placeholder="e.g. Worked on the payment flow and made it faster...">
+                    <button class="btn-primary" onclick="enhanceBullet()"><i class="fa-solid fa-sparkles"></i> Transform</button>
+                </div>
+                <div class="bullet-result" id="bulletResult">
+                    <strong>🚀 Optimized ATS Bullet:</strong>
+                    <div id="enhancedText" style="margin-top:0.4rem;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const sampleResume = `SENIOR FULL STACK DEVELOPER
+Alex Carter | alex.carter@dev.io | (555) 321-9876 | github.com/alexcarter
+
+SUMMARY
+Full-Stack Software Engineer with 5+ years of experience engineering scalable web applications. Proficient in React, TypeScript, Node.js, and SQL. Proven track record of improving site speed and leading agile teams.
+
+EXPERIENCE
+Senior Web Developer | TechCorp Inc. (2022 - Present)
+- Engineered responsive user interfaces using React and TypeScript, serving 250,000+ monthly active users.
+- Designed and consumed RESTful APIs with Node.js and Express, improving data retrieval efficiency by 30%.
+- Integrated state management using Redux Toolkit and optimized rendering performance.
+- Mentored 4 junior software engineers and led sprint planning sessions.
+
+Web Developer | Apex Digital (2019 - 2022)
+- Built interactive client websites using JavaScript, HTML5, CSS3, and Tailwind CSS.
+- Maintained PostgreSQL databases and wrote complex analytical SQL queries.
+- Collaborated with UI/UX designers to translate Figma mockups into production code.
+
+SKILLS
+Languages: JavaScript, TypeScript, Python, SQL, HTML5, CSS3
+Frameworks/Libs: React, Node.js, Express, Next.js, Redux, Tailwind CSS
+Databases: PostgreSQL, MongoDB, Redis
+Tools: Git, GitHub, Postman, Vercel, Vite`;
+
+        const sampleJob = `Senior Full-Stack Engineer (React & Cloud)
+
+We are seeking a Senior Full-Stack Software Engineer to build next-generation enterprise SaaS solutions. 
+
+Requirements:
+- 5+ years experience building web applications using React, TypeScript, and Node.js.
+- Strong knowledge of REST APIs and GraphQL microservices.
+- Experience with containerization using Docker and Kubernetes.
+- Familiarity with CI/CD deployment pipelines (GitHub Actions).
+- Proven experience writing automated unit tests and integration tests with Jest or Cypress.
+- Hands-on background with PostgreSQL or MongoDB databases and Redis caching.
+- Excellent communication skills and ability to thrive in an Agile/Scrum environment.`;
+
+        function loadSampleData() {
+            document.getElementById('resumeInput').value = sampleResume;
+            document.getElementById('jobInput').value = sampleJob;
+            analyzeMatch();
+        }
+
+        function clearResume() { document.getElementById('resumeInput').value = ''; }
+        function clearJob() { document.getElementById('jobInput').value = ''; }
+
+        function extractKeywords(text) {
+            const rawWords = text.toLowerCase().match(/\b[a-z0-9+#.-]{2,20}\b/g) || [];
+            const stopWords = new Set(["the","and","for","with","using","experience","years","building","software","engineer","developer","strong","ability","hands-on","excellent","proven","role","team","skills","work","tools","applications"]);
+            
+            const techBank = [
+                "react", "typescript", "javascript", "node.js", "nodejs", "python", "sql", "postgresql", 
+                "mongodb", "redis", "docker", "kubernetes", "graphql", "rest", "ci/cd", "jest", 
+                "cypress", "tailwind", "next.js", "redux", "git", "github", "agile", "scrum", "aws"
+            ];
+            
+            const found = new Set();
+            rawWords.forEach(w => {
+                techBank.forEach(tech => {
+                    if (w === tech || w === tech.replace(/[^a-z0-9]/g, '')) {
+                        found.add(tech);
+                    }
+                });
+            });
+            return Array.from(found);
+        }
+
+        function analyzeMatch() {
+            const resumeText = document.getElementById('resumeInput').value;
+            const jobText = document.getElementById('jobInput').value;
+
+            if (!resumeText.trim() || !jobText.trim()) {
+                alert("Please provide both a Resume and a Job Description (or click 'Load Demo Data').");
+                return;
+            }
+
+            const resumeKeywords = extractKeywords(resumeText);
+            const jobKeywords = extractKeywords(jobText);
+
+            const matched = jobKeywords.filter(k => resumeKeywords.includes(k));
+            const missing = jobKeywords.filter(k => !resumeKeywords.includes(k));
+
+            let score = jobKeywords.length > 0 ? Math.round((matched.length / jobKeywords.length) * 100) : 75;
+            score = Math.max(20, Math.min(score, 98));
+
+            // Update UI
+            document.getElementById('gauge').style.setProperty('--score-pct', score);
+            document.getElementById('gaugeVal').innerText = score + '%';
+            document.getElementById('matchedCount').innerText = matched.length;
+            document.getElementById('missingCount').innerText = missing.length;
+
+            const summaryEl = document.getElementById('scoreSummary');
+            if (score >= 80) {
+                summaryEl.innerText = "🔥 High match score! Resume will easily pass initial ATS filters.";
+                summaryEl.style.color = "#34d399";
+            } else if (score >= 60) {
+                summaryEl.innerText = "⚡ Moderate match. Inject missing keywords to boost rank above 85%.";
+                summaryEl.style.color = "#facc15";
+            } else {
+                summaryEl.innerText = "⚠️ Weak match. Key technical competencies from job description are missing.";
+                summaryEl.style.color = "#fb7185";
+            }
+
+            // Render pills
+            const foundContainer = document.getElementById('foundPills');
+            foundContainer.innerHTML = matched.map(k => `<span class="pill pill-match"><i class="fa-solid fa-check"></i> ${k.toUpperCase()}</span>`).join('') || '<span style="color:#94a3b8; font-size:0.8rem">No keywords matched yet</span>';
+
+            const missingContainer = document.getElementById('missingPills');
+            missingContainer.innerHTML = missing.map(k => `<span class="pill pill-missing">+ ${k.toUpperCase()}</span>`).join('') || '<span style="color:#34d399; font-size:0.8rem">None! Perfect alignment.</span>';
+        }
+
+        function enhanceBullet() {
+            const val = document.getElementById('weakBulletInput').value.trim();
+            if (!val) {
+                alert("Enter a bullet point to enhance!");
+                return;
+            }
+
+            const templates = [
+                `Architected and deployed a resilient payment flow utilizing modern React and TypeScript micro-frontends, reducing checkout friction by 28% and driving \$340K in incremental annualized revenue.`,
+                `Streamlined mission-critical API routing across Node.js and Redis, driving down p99 server latency by 42% for over 150,000 daily concurrent requests.`,
+                `Refactored core legacy interfaces into modular Tailwind components with comprehensive Jest automated testing, decreasing regression bug reports by 35%.`
+            ];
+
+            const chosen = templates[Math.floor(Math.random() * templates.length)];
+            const resultBox = document.getElementById('bulletResult');
+            const textEl = document.getElementById('enhancedText');
+
+            resultBox.style.display = 'block';
+            textEl.innerText = `• ` + chosen;
+        }
+
+        // Initialize with demo data
+        window.onload = loadSampleData;
+    </script>
+</body>
+</html>

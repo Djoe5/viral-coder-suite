@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quantum Particle Nebula // Interactive Physics</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            background: #030712;
+            color: #f9fafb;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            overflow: hidden;
+            height: 100vh;
+            width: 100vw;
+            user-select: none;
+        }
+
+        canvas {
+            display: block;
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+
+        .hud-overlay {
+            position: absolute;
+            top: 1.5rem;
+            left: 1.5rem;
+            z-index: 10;
+            background: rgba(15, 23, 42, 0.75);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 14px;
+            padding: 1.25rem;
+            width: 320px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+            transition: opacity 0.3s ease;
+        }
+
+        .hud-title {
+            font-size: 1.1rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #38bdf8, #818cf8);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 0.25rem;
+        }
+
+        .hud-subtitle {
+            font-size: 0.78rem;
+            color: #94a3b8;
+            margin-bottom: 1rem;
+        }
+
+        .control-row {
+            margin-bottom: 0.85rem;
+        }
+
+        .control-label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.78rem;
+            color: #cbd5e1;
+            margin-bottom: 0.3rem;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            height: 4px;
+            background: #334155;
+            border-radius: 2px;
+            outline: none;
+            -webkit-appearance: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: #38bdf8;
+            cursor: pointer;
+            box-shadow: 0 0 10px #38bdf8;
+        }
+
+        .palette-group {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+        }
+
+        .palette-btn {
+            flex: 1;
+            height: 28px;
+            border-radius: 6px;
+            border: 1px solid rgba(255,255,255,0.2);
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        .palette-btn:hover { transform: scale(1.05); }
+
+        .hint-badge {
+            margin-top: 0.75rem;
+            font-size: 0.75rem;
+            color: #38bdf8;
+            background: rgba(56, 189, 248, 0.1);
+            border: 1px dashed rgba(56, 189, 248, 0.3);
+            border-radius: 6px;
+            padding: 0.4rem 0.6rem;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="hud-overlay" id="hud">
+        <div class="hud-title">⚡ Nebula Physics Engine</div>
+        <div class="hud-subtitle">Interactive particle galaxy & gravity simulator</div>
+
+        <div class="control-row">
+            <div class="control-label">
+                <span>Particle Count</span>
+                <span id="countVal">180</span>
+            </div>
+            <input type="range" id="particleCount" min="50" max="400" value="180">
+        </div>
+
+        <div class="control-row">
+            <div class="control-label">
+                <span>Gravity Radius</span>
+                <span id="radiusVal">160px</span>
+            </div>
+            <input type="range" id="gravityRadius" min="60" max="350" value="160">
+        </div>
+
+        <div class="control-row">
+            <div class="control-label"><span>Color Matrix</span></div>
+            <div class="palette-group">
+                <button class="palette-btn" style="background: linear-gradient(135deg, #06b6d4, #3b82f6);" onclick="setPalette('cyan')" title="Cyan Ocean"></button>
+                <button class="palette-btn" style="background: linear-gradient(135deg, #ec4899, #8b5cf6);" onclick="setPalette('neon')" title="Synthwave"></button>
+                <button class="palette-btn" style="background: linear-gradient(135deg, #f59e0b, #ef4444);" onclick="setPalette('solar')" title="Solar Flare"></button>
+                <button class="palette-btn" style="background: linear-gradient(135deg, #10b981, #059669);" onclick="setPalette('matrix')" title="Cyber Matrix"></button>
+            </div>
+        </div>
+
+        <div class="hint-badge">
+            🖱️ Move cursor to pull particles • Click to trigger Supernova!
+        </div>
+    </div>
+
+    <canvas id="galaxyCanvas"></canvas>
+
+    <script>
+        const canvas = document.getElementById('galaxyCanvas');
+        const ctx = canvas.getContext('2d');
+
+        let width = canvas.width = window.innerWidth;
+        let height = canvas.height = window.innerHeight;
+
+        let numParticles = 180;
+        let gravityRadius = 160;
+        let activeTheme = 'cyan';
+
+        const colorThemes = {
+            cyan: { p: '#38bdf8', line: 'rgba(56, 189, 248, ' },
+            neon: { p: '#f43f5e', line: 'rgba(244, 63, 94, ' },
+            solar: { p: '#f59e0b', line: 'rgba(245, 158, 11, ' },
+            matrix: { p: '#10b981', line: 'rgba(16, 185, 129, ' }
+        };
+
+        const mouse = { x: null, y: null };
+
+        window.addEventListener('mousemove', (e) => {
+            mouse.x = e.clientX;
+            mouse.y = e.clientY;
+        });
+
+        window.addEventListener('mouseleave', () => {
+            mouse.x = null;
+            mouse.y = null;
+        });
+
+        window.addEventListener('click', (e) => {
+            explodeParticles(e.clientX, e.clientY);
+        });
+
+        window.addEventListener('resize', () => {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+            initParticles();
+        });
+
+        class Particle {
+            constructor(x, y) {
+                this.x = x || Math.random() * width;
+                this.y = y || Math.random() * height;
+                this.vx = (Math.random() - 0.5) * 1.5;
+                this.vy = (Math.random() - 0.5) * 1.5;
+                this.radius = Math.random() * 2 + 1;
+                this.baseVx = this.vx;
+                this.baseVy = this.vy;
+            }
+
+            update() {
+                // Mouse gravity attraction
+                if (mouse.x !== null) {
+                    const dx = mouse.x - this.x;
+                    const dy = mouse.y - this.y;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+
+                    if (dist < gravityRadius) {
+                        const force = (gravityRadius - dist) / gravityRadius;
+                        const angle = Math.atan2(dy, dx);
+                        this.vx += Math.cos(angle) * force * 0.4;
+                        this.vy += Math.sin(angle) * force * 0.4;
+                    }
+                }
+
+                // Damping
+                this.vx *= 0.98;
+                this.vy *= 0.98;
+
+                // Minimum motion preservation
+                if (Math.abs(this.vx) < 0.2) this.vx += (Math.random() - 0.5) * 0.3;
+                if (Math.abs(this.vy) < 0.2) this.vy += (Math.random() - 0.5) * 0.3;
+
+                this.x += this.vx;
+                this.y += this.vy;
+
+                // Bounce off borders
+                if (this.x < 0 || this.x > width) this.vx *= -1;
+                if (this.y < 0 || this.y > height) this.vy *= -1;
+            }
+
+            draw() {
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                ctx.fillStyle = colorThemes[activeTheme].p;
+                ctx.shadowColor = colorThemes[activeTheme].p;
+                ctx.shadowBlur = 8;
+                ctx.fill();
+                ctx.shadowBlur = 0;
+            }
+        }
+
+        let particles = [];
+
+        function initParticles() {
+            particles = [];
+            for (let i = 0; i < numParticles; i++) {
+                particles.push(new Particle());
+            }
+        }
+
+        function explodeParticles(x, y) {
+            for (let i = 0; i < 35; i++) {
+                const angle = Math.random() * Math.PI * 2;
+                const speed = Math.random() * 7 + 3;
+                const p = new Particle(x, y);
+                p.vx = Math.cos(angle) * speed;
+                p.vy = Math.sin(angle) * speed;
+                p.radius = Math.random() * 3 + 2;
+                particles.push(p);
+            }
+            if (particles.length > numParticles + 80) {
+                particles.splice(0, 35);
+            }
+        }
+
+        function drawConnections() {
+            const maxDist = 110;
+            const linePrefix = colorThemes[activeTheme].line;
+
+            for (let i = 0; i < particles.length; i++) {
+                for (let j = i + 1; j < particles.length; j++) {
+                    const dx = particles[i].x - particles[j].x;
+                    const dy = particles[i].y - particles[j].y;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+
+                    if (dist < maxDist) {
+                        const alpha = (1 - dist / maxDist) * 0.5;
+                        ctx.beginPath();
+                        ctx.moveTo(particles[i].x, particles[i].y);
+                        ctx.lineTo(particles[j].x, particles[j].y);
+                        ctx.strokeStyle = linePrefix + alpha + ')';
+                        ctx.lineWidth = 0.8;
+                        ctx.stroke();
+                    }
+                }
+            }
+        }
+
+        function animate() {
+            ctx.clearRect(0, 0, width, height);
+
+            particles.forEach(p => {
+                p.update();
+                p.draw();
+            });
+
+            drawConnections();
+            requestAnimationFrame(animate);
+        }
+
+        function setPalette(theme) {
+            activeTheme = theme;
+        }
+
+        document.getElementById('particleCount').addEventListener('input', (e) => {
+            numParticles = parseInt(e.target.value);
+            document.getElementById('countVal').innerText = numParticles;
+            initParticles();
+        });
+
+        document.getElementById('gravityRadius').addEventListener('input', (e) => {
+            gravityRadius = parseInt(e.target.value);
+            document.getElementById('radiusVal').innerText = gravityRadius + 'px';
+        });
+
+        initParticles();
+        animate();
+    </script>
+</body>
+</html>

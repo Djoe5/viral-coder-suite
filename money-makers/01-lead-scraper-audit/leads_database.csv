@@ -1,0 +1,9 @@
+business_name,category,city,phone,email,website,google_rating,reviews_count,has_ssl,mobile_friendly,instagram_handle,lead_status
+Apex Plumbing & Rooter,Plumber,Austin TX,+15125550142,service@apexplumbingatx.com,,4.6,38,False,False,,HIGH_VALUE_NO_SITE
+Lone Star Dental Care,Dentist,Dallas TX,+12145550188,appointments@lonestardentalcare.com,,4.8,114,False,False,,HIGH_VALUE_NO_SITE
+Zenith Fitness Studio,Gym & Fitness,Austin TX,+15125550176,info@zenithfitatx.com,,4.9,190,False,False,@zenithfit_atx,HIGH_VALUE_NO_SITE
+Elite HVAC Solutions,HVAC,Houston TX,+17135550155,support@elitehvac-houston.com,,4.7,89,False,False,,HIGH_VALUE_NO_SITE
+Horizon Roofing Pros,Roofing Contractor,San Antonio TX,+12105550133,quotes@horizonroofingtx.com,,4.5,47,False,False,,HIGH_VALUE_NO_SITE
+Precision Auto Body,Auto Repair,Houston TX,+17135550112,repairs@precisionautohouston.net,http://precisionautobodyhouston.net,4.1,29,False,False,,OUTDATED_NOT_SECURE
+Bella Vista Trattoria,Italian Restaurant,Austin TX,+15125550199,reservations@bellavistatx.com,http://bellavistatx.example.com,3.9,82,False,False,@bellavistatx,NEEDS_WEBSITE_REVAMP
+Golden Harvest Bakery,Bakery,Austin TX,+15125550164,orders@goldenharvestaustin.org,http://goldenharvestaustin.org,4.2,63,False,False,@goldenharvest_atx,NEEDS_WEBSITE_REVAMP

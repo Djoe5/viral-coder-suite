@@ -1,0 +1,55 @@
+{
+  "hooks": [
+    {
+      "id": "secret_site",
+      "name": "Secret Websites That Feel Illegal",
+      "hook_formula": "3 secret websites every developer needs to bookmark before they get taken down 🤫",
+      "pacing": "Fast 0-3s zoom on browser tab",
+      "cta": "Comment 'SITE' and I'll DM you direct links to all three!"
+    },
+    {
+      "id": "contrarian_advice",
+      "name": "Stop Building To-Do Apps",
+      "hook_formula": "Stop building useless To-Do apps in 2026. Build THIS high-ticket project instead 🚀",
+      "pacing": "Show live full-stack app UI with metrics",
+      "cta": "Comment 'REPO' to get the full GitHub source code and starter boilerplate!"
+    },
+    {
+      "id": "side_hustle_speedrun",
+      "name": "The Weekend Micro-SaaS Blueprint",
+      "hook_formula": "How I built a $1,200/month micro-tool in 48 hours using Python and Gemini API 💰",
+      "pacing": "Terminal scrolling -> Stripe payout screenshot -> Live website",
+      "cta": "Comment 'SAAS' and I'll send you the exact prompt checklist I used to build it!"
+    },
+    {
+      "id": "css_cheat_code",
+      "name": "CSS Trick Nobody Teaches You",
+      "hook_formula": "This one line of modern CSS replaces 50 lines of JavaScript in your project 🤯",
+      "pacing": "Split screen: messy JS vs 1 clean CSS declaration",
+      "cta": "Comment 'CSS' to grab the interactive code snippet sandbox!"
+    }
+  ],
+  "sample_topics": [
+    {
+      "topic": "Automated Lead Scraper",
+      "category": "Python & Side Hustle",
+      "tools": ["Playwright", "BeautifulSoup", "Pandas"],
+      "reel_length": "28 seconds",
+      "carousel_slides": 6
+    },
+    {
+      "topic": "AI ATS Resume Scanner",
+      "category": "Full Stack Micro-SaaS",
+      "tools": ["Next.js", "Tailwind CSS", "Gemini API"],
+      "reel_length": "32 seconds",
+      "carousel_slides": 7
+    },
+    {
+      "topic": "Interactive Cyberpunk Terminal Portfolio",
+      "category": "Frontend Viral Flex",
+      "tools": ["HTML5 Canvas", "Web Audio API", "Vanilla JS"],
+      "reel_length": "24 seconds",
+      "carousel_slides": 5
+    }
+  ]
+}

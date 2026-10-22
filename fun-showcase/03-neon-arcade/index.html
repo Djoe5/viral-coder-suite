@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CYBERPUNK ARENA // Neon Arcade</title>
+    <style>
+        :root {
+            --neon-pink: #ff007f;
+            --neon-cyan: #00f3ff;
+            --neon-yellow: #ffe600;
+            --bg-dark: #080314;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            background: var(--bg-dark);
+            color: #ffffff;
+            font-family: 'Courier New', Courier, monospace;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            user-select: none;
+        }
+
+        .header-panel {
+            text-align: center;
+            margin-bottom: 1rem;
+            z-index: 10;
+        }
+
+        h1 {
+            font-size: 2.2rem;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: var(--neon-cyan);
+            text-shadow: 0 0 10px var(--neon-cyan), 0 0 20px rgba(0, 243, 255, 0.4);
+        }
+
+        .score-board {
+            display: flex;
+            gap: 2rem;
+            margin-top: 0.5rem;
+            font-size: 1.1rem;
+            font-weight: bold;
+        }
+
+        .score-item {
+            color: var(--neon-pink);
+            text-shadow: 0 0 8px var(--neon-pink);
+        }
+
+        #gameCanvas {
+            background: rgba(13, 5, 29, 0.9);
+            border: 2px solid var(--neon-cyan);
+            box-shadow: 0 0 25px rgba(0, 243, 255, 0.25), inset 0 0 30px rgba(0, 0, 0, 0.8);
+            border-radius: 12px;
+            cursor: none;
+            display: block;
+        }
+
+        .controls-hint {
+            margin-top: 1rem;
+            font-size: 0.85rem;
+            color: #a78bfa;
+            text-shadow: 0 0 5px rgba(167, 139, 250, 0.5);
+        }
+
+        /* Screen Shake Effect */
+        .shake {
+            animation: shakeAnim 0.15s cubic-bezier(.36,.07,.19,.97) both;
+        }
+
+        @keyframes shakeAnim {
+            10%, 90% { transform: translate3d(-2px, 0, 0); }
+            20%, 80% { transform: translate3d(3px, 0, 0); }
+            30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
+            40%, 60% { transform: translate3d(4px, 0, 0); }
+        }
+    </style>
+</head>
+<body>
+    <div class="header-panel">
+        <h1>⚡ CYBERPUNK REFLEX ARENA ⚡</h1>
+        <div class="score-board">
+            <div class="score-item">SCORE: <span id="currentScore">0</span></div>
+            <div class="score-item" style="color:var(--neon-yellow); text-shadow:0 0 8px var(--neon-yellow);">HIGH: <span id="highScore">0</span></div>
+            <div class="score-item" style="color:var(--neon-cyan); text-shadow:0 0 8px var(--neon-cyan);">COMBO: <span id="comboMultiplier">x1</span></div>
+        </div>
+    </div>
+
+    <canvas id="gameCanvas" width="800" height="480"></canvas>
+
+    <div class="controls-hint">
+        [MOUSE / TOUCH] Move Paddle • Hit with paddle edges for angled power shots • Don't let it pass!
+    </div>
+
+    <script>
+        // Web Audio Synthesizer for Arcade Sounds
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        let actx = null;
+
+        function playSound(freq, type = 'square', dur = 0.05) {
+            try {
+                if (!actx) actx = new AudioCtx();
+                const osc = actx.createOscillator();
+                const gain = actx.createGain();
+                osc.type = type;
+                osc.frequency.setValueAtTime(freq, actx.currentTime);
+                gain.gain.setValueAtTime(0.06, actx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.0001, actx.currentTime + dur);
+                osc.connect(gain);
+                gain.connect(actx.destination);
+                osc.start();
+                osc.stop(actx.currentTime + dur);
+            } catch(e) {}
+        }
+
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        let score = 0;
+        let combo = 1;
+        let highScore = parseInt(localStorage.getItem('cyber_high_score') || '0');
+        document.getElementById('highScore').innerText = highScore;
+
+        // Paddle
+        const paddle = {
+            width: 120,
+            height: 14,
+            x: (canvas.width - 120) / 2,
+            y: canvas.height - 35,
+            color: '#00f3ff'
+        };
+
+        // Ball
+        let ball = {
+            x: canvas.width / 2,
+            y: canvas.height / 3,
+            radius: 8,
+            vx: 4.5,
+            vy: 4.5,
+            speed: 5.5,
+            color: '#ff007f'
+        };
+
+        // Trail & Particles
+        let trail = [];
+        let particles = [];
+
+        function triggerShake() {
+            canvas.classList.add('shake');
+            setTimeout(() => canvas.classList.remove('shake'), 160);
+        }
+
+        function createSparks(x, y, color, count = 18) {
+            for (let i = 0; i < count; i++) {
+                const angle = Math.random() * Math.PI * 2;
+                const speed = Math.random() * 6 + 2;
+                particles.push({
+                    x: x,
+                    y: y,
+                    vx: Math.cos(angle) * speed,
+                    vy: Math.sin(angle) * speed,
+                    radius: Math.random() * 3 + 1,
+                    alpha: 1,
+                    color: color
+                });
+            }
+        }
+
+        // Mouse Tracking
+        canvas.addEventListener('mousemove', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            const rootX = e.clientX - rect.left;
+            paddle.x = Math.max(0, Math.min(canvas.width - paddle.width, rootX - paddle.width / 2));
+        });
+
+        canvas.addEventListener('touchmove', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            const rootX = e.touches[0].clientX - rect.left;
+            paddle.x = Math.max(0, Math.min(canvas.width - paddle.width, rootX - paddle.width / 2));
+            e.preventDefault();
+        }, { passive: false });
+
+        function resetBall() {
+            triggerShake();
+            playSound(120, 'sawtooth', 0.3);
+            createSparks(ball.x, canvas.height, '#ff007f', 30);
+            
+            combo = 1;
+            document.getElementById('comboMultiplier').innerText = 'x' + combo;
+            score = 0;
+            document.getElementById('currentScore').innerText = score;
+
+            ball.x = canvas.width / 2;
+            ball.y = canvas.height / 3;
+            ball.speed = 5.5;
+            ball.vx = (Math.random() > 0.5 ? 4.5 : -4.5);
+            ball.vy = 4.5;
+            trail = [];
+        }
+
+        function update() {
+            // Ball motion
+            ball.x += ball.vx;
+            ball.y += ball.vy;
+
+            // Trail
+            trail.push({ x: ball.x, y: ball.y, alpha: 1 });
+            if (trail.length > 12) trail.shift();
+            trail.forEach(t => t.alpha *= 0.85);
+
+            // Wall collisions
+            if (ball.x - ball.radius <= 0) {
+                ball.x = ball.radius;
+                ball.vx *= -1;
+                playSound(440);
+                createSparks(ball.x, ball.y, '#00f3ff', 8);
+            } else if (ball.x + ball.radius >= canvas.width) {
+                ball.x = canvas.width - ball.radius;
+                ball.vx *= -1;
+                playSound(440);
+                createSparks(ball.x, ball.y, '#00f3ff', 8);
+            }
+
+            if (ball.y - ball.radius <= 0) {
+                ball.y = ball.radius;
+                ball.vy *= -1;
+                playSound(550);
+                createSparks(ball.x, ball.y, '#ffe600', 10);
+            }
+
+            // Paddle collision
+            if (
+                ball.y + ball.radius >= paddle.y &&
+                ball.y - ball.radius <= paddle.y + paddle.height &&
+                ball.x >= paddle.x &&
+                ball.x <= paddle.x + paddle.width
+            ) {
+                // Calculate strike angle based on hit location
+                const hitOffset = (ball.x - (paddle.x + paddle.width / 2)) / (paddle.width / 2);
+                ball.speed = Math.min(ball.speed + 0.35, 12);
+                
+                const angle = hitOffset * (Math.PI / 3); // Max 60 degree deflection
+                ball.vx = ball.speed * Math.sin(angle);
+                ball.vy = -ball.speed * Math.cos(angle);
+
+                ball.y = paddle.y - ball.radius;
+
+                score += 10 * combo;
+                combo++;
+                document.getElementById('currentScore').innerText = score;
+                document.getElementById('comboMultiplier').innerText = 'x' + combo;
+
+                if (score > highScore) {
+                    highScore = score;
+                    localStorage.setItem('cyber_high_score', highScore);
+                    document.getElementById('highScore').innerText = highScore;
+                }
+
+                playSound(720 + combo * 30, 'square', 0.08);
+                createSparks(ball.x, paddle.y, '#00f3ff', 16);
+            }
+
+            // Bottom drain (Miss)
+            if (ball.y - ball.radius > canvas.height) {
+                resetBall();
+            }
+
+            // Update particles
+            for (let i = particles.length - 1; i >= 0; i--) {
+                const p = particles[i];
+                p.x += p.vx;
+                p.y += p.vy;
+                p.alpha -= 0.035;
+                if (p.alpha <= 0) particles.splice(i, 1);
+            }
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Draw grid lines
+            ctx.strokeStyle = "rgba(0, 243, 255, 0.04)";
+            ctx.lineWidth = 1;
+            for (let x = 0; x < canvas.width; x += 40) {
+                ctx.beginPath();
+                ctx.moveTo(x, 0);
+                ctx.lineTo(x, canvas.height);
+                ctx.stroke();
+            }
+            for (let y = 0; y < canvas.height; y += 40) {
+                ctx.beginPath();
+                ctx.moveTo(0, y);
+                ctx.lineTo(canvas.width, y);
+                ctx.stroke();
+            }
+
+            // Draw Ball Trail
+            trail.forEach(t => {
+                ctx.beginPath();
+                ctx.arc(t.x, t.y, ball.radius * t.alpha, 0, Math.PI * 2);
+                ctx.fillStyle = `rgba(255, 0, 127, ${t.alpha * 0.4})`;
+                ctx.fill();
+            });
+
+            // Draw Ball
+            ctx.beginPath();
+            ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
+            ctx.fillStyle = ball.color;
+            ctx.shadowColor = ball.color;
+            ctx.shadowBlur = 15;
+            ctx.fill();
+            ctx.shadowBlur = 0;
+
+            // Draw Paddle
+            ctx.fillStyle = paddle.color;
+            ctx.shadowColor = paddle.color;
+            ctx.shadowBlur = 18;
+            ctx.fillRect(paddle.x, paddle.y, paddle.width, paddle.height);
+            ctx.shadowBlur = 0;
+
+            // Draw Particles
+            particles.forEach(p => {
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+                ctx.fillStyle = p.color;
+                ctx.globalAlpha = p.alpha;
+                ctx.shadowColor = p.color;
+                ctx.shadowBlur = 6;
+                ctx.fill();
+                ctx.globalAlpha = 1.0;
+                ctx.shadowBlur = 0;
+            });
+        }
+
+        function gameLoop() {
+            update();
+            draw();
+            requestAnimationFrame(gameLoop);
+        }
+
+        gameLoop();
+    </script>
+</body>
+</html>

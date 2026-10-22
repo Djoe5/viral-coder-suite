@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CYBER-OS // Viral Hacker Terminal</title>
+    <style>
+        :root {
+            --term-green: #00ff66;
+            --term-glow: rgba(0, 255, 102, 0.4);
+            --term-bg: #050a06;
+        }
+
+        body[data-theme="cyan"] {
+            --term-green: #00f3ff;
+            --term-glow: rgba(0, 243, 255, 0.4);
+            --term-bg: #03080d;
+        }
+
+        body[data-theme="amber"] {
+            --term-green: #ffb700;
+            --term-glow: rgba(255, 183, 0, 0.4);
+            --term-bg: #0d0902;
+        }
+
+        body[data-theme="synthwave"] {
+            --term-green: #ff007f;
+            --term-glow: rgba(255, 0, 127, 0.45);
+            --term-bg: #0a0208;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        
+        body {
+            background-color: var(--term-bg);
+            color: var(--term-green);
+            font-family: 'Courier New', Courier, monospace;
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            text-shadow: 0 0 8px var(--term-glow);
+        }
+
+        /* CRT SCANLINE & FLICKER OVERLAY */
+        .scanlines {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.03), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.03));
+            background-size: 100% 3px, 6px 100%;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        .crt-vignette {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            box-shadow: inset 0 0 100px rgba(0,0,0,0.85);
+            pointer-events: none;
+            z-index: 11;
+        }
+
+        #matrixCanvas {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 1;
+            opacity: 0.25;
+            display: none;
+            pointer-events: none;
+        }
+
+        .terminal-container {
+            position: relative;
+            z-index: 5;
+            flex: 1;
+            padding: 1.5rem 2rem;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .banner {
+            font-size: 0.8rem;
+            white-space: pre;
+            line-height: 1.2;
+            margin-bottom: 1rem;
+            user-select: none;
+        }
+
+        .output-line {
+            line-height: 1.5;
+            font-size: 0.95rem;
+            word-break: break-all;
+        }
+
+        .input-row {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+        }
+
+        .prompt-symbol {
+            font-weight: bold;
+            font-size: 1rem;
+        }
+
+        #termInput {
+            flex: 1;
+            background: transparent;
+            border: none;
+            outline: none;
+            color: var(--term-green);
+            font-family: inherit;
+            font-size: 1rem;
+            text-shadow: inherit;
+        }
+
+        .cursor {
+            display: inline-block;
+            width: 8px;
+            height: 1.1rem;
+            background: var(--term-green);
+            animation: blink 1s step-end infinite;
+            vertical-align: middle;
+        }
+
+        @keyframes blink {
+            from, to { opacity: 1; }
+            50% { opacity: 0; }
+        }
+
+        .system-topbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--term-green);
+            padding: 0.5rem 1.5rem;
+            font-size: 0.8rem;
+            background: rgba(0,0,0,0.4);
+            z-index: 5;
+        }
+
+        .top-tags span {
+            margin-right: 1rem;
+        }
+
+        .cmd-hint {
+            color: #ffffff;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="scanlines"></div>
+    <div class="crt-vignette"></div>
+    <canvas id="matrixCanvas"></canvas>
+
+    <div class="system-topbar">
+        <div class="top-tags">
+            <span>[SYS] CYBER_CORE_V4</span>
+            <span>[HOST] viral-box.local</span>
+            <span>[AUDIO] SYNTH_ACTIVE</span>
+        </div>
+        <div>STATUS: ONLINE // TYPE 'help' FOR COMMANDS</div>
+    </div>
+
+    <div class="terminal-container" id="terminal" onclick="focusInput()">
+        <div class="banner">
+ ██████╗██╗   ██╗██████╗ ███████╗██████╗     ██████╗ ███████╗
+██╔════╝╚██╗ ██╔╝██╔══██╗██╔════╝██╔══██╗   ██╔═══██╗██╔════╝
+██║      ╚████╔╝ ██████╔╝█████╗  ██████╔╝   ██║   ██║███████╗
+██║       ╚██╔╝  ██╔══██╗██╔══╝  ██╔══██╗   ██║   ██║╚════██║
+╚██████╗   ██║   ██████╔╝███████╗██║  ██║██╗╚██████╔╝███████║
+ ╚═════╝   ╚═╝   ╚═════╝ ╚══════╝╚═╝  ╚═╝╚═╝ ╚═════╝ ╚══════╝
+        </div>
+        <div class="output-line">Welcome to Cyber-OS Terminal Environment.</div>
+        <div class="output-line">Type <span class="cmd-hint">'help'</span> to see available hacker commands or <span class="cmd-hint">'matrix'</span> to start cyber rain.</div>
+        <div class="output-line">-----------------------------------------------------------------</div>
+        <div id="outputArea"></div>
+
+        <div class="input-row">
+            <span class="prompt-symbol">guest@viral-core:~$</span>
+            <input type="text" id="termInput" autocomplete="off" spellcheck="false" autofocus>
+        </div>
+    </div>
+
+    <script>
+        // Web Audio Synthesizer for authentic click/bleep sound effects
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        let ctx = null;
+
+        function playBeep(freq = 800, type = "sine", duration = 0.04) {
+            try {
+                if (!ctx) ctx = new AudioCtx();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.type = type;
+                osc.frequency.value = freq;
+                gain.gain.setValueAtTime(0.04, ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + duration);
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.start();
+                osc.stop(ctx.currentTime + duration);
+            } catch (e) {}
+        }
+
+        const terminal = document.getElementById('terminal');
+        const outputArea = document.getElementById('outputArea');
+        const input = document.getElementById('termInput');
+        const matrixCanvas = document.getElementById('matrixCanvas');
+        let matrixActive = false;
+        let matrixInterval = null;
+
+        function focusInput() { input.focus(); }
+
+        input.addEventListener('keydown', function(e) {
+            playBeep(450 + Math.random() * 200, "square", 0.03);
+            if (e.key === 'Enter') {
+                const cmd = input.value.trim();
+                executeCommand(cmd);
+                input.value = '';
+                terminal.scrollTop = terminal.scrollHeight;
+            }
+        });
+
+        function appendOutput(html) {
+            const div = document.createElement('div');
+            div.className = 'output-line';
+            div.innerHTML = html;
+            outputArea.appendChild(div);
+            terminal.scrollTop = terminal.scrollHeight;
+        }
+
+        function executeCommand(cmdStr) {
+            const parts = cmdStr.split(' ');
+            const cmd = parts[0].toLowerCase();
+            const arg = parts.slice(1).join(' ');
+
+            appendOutput(`<span style="color:#ffffff;">guest@viral-core:~$</span> ${cmdStr}`);
+
+            if (!cmd) return;
+
+            switch(cmd) {
+                case 'help':
+                    playBeep(900, "sine", 0.1);
+                    appendOutput(`
+Available Commands:
+  <span class="cmd-hint">help</span>            - Display this manual
+  <span class="cmd-hint">matrix</span>          - Toggle full-screen Falling Green Matrix Rain
+  <span class="cmd-hint">hack-nasa</span>       - Execute Hollywood Mainframe Intrusion sequence
+  <span class="cmd-hint">scan &lt;target&gt;</span>   - Port scan & packet sniff simulation
+  <span class="cmd-hint">crypto</span>          - Display live simulated crypto/tech telemetry
+  <span class="cmd-hint">theme &lt;name&gt;</span>    - Change palette: green, cyan, amber, synthwave
+  <span class="cmd-hint">quote</span>           - Random programmer wisdom / funny bug
+  <span class="cmd-hint">bio</span>             - Creator specs & viral metrics
+  <span class="cmd-hint">clear</span>           - Clear screen buffer
+                    `);
+                    break;
+
+                case 'clear':
+                    outputArea.innerHTML = '';
+                    break;
+
+                case 'matrix':
+                    toggleMatrix();
+                    break;
+
+                case 'theme':
+                    const themes = ['green', 'cyan', 'amber', 'synthwave'];
+                    if (themes.includes(arg.toLowerCase())) {
+                        document.body.setAttribute('data-theme', arg.toLowerCase());
+                        appendOutput(`🎨 Theme switched to: <strong style="color:var(--term-green);">${arg.toUpperCase()}</strong>`);
+                    } else {
+                        appendOutput(`Usage: theme [${themes.join(' | ')}]`);
+                    }
+                    break;
+
+                case 'hack-nasa':
+                    runHollywoodHack();
+                    break;
+
+                case 'scan':
+                    const target = arg || "192.168.1.104";
+                    runScan(target);
+                    break;
+
+                case 'crypto':
+                    appendOutput(`
+[TELEMETRY] LIVE TECH ASSET INDEX:
+  • BTC/USD:   $94,240.50  ▲ +4.2%  [HASH_RATE: 680 EH/s]
+  • ETH/USD:   $3,820.15   ▲ +2.8%  [GAS: 12 Gwei]
+  • SOL/USD:   $214.80     ▲ +7.1%  [TPS: 2,450]
+  • NVDA/USD:  $142.60     ▲ +3.4%  [GPU CLUSTER SATURATION: 99.8%]
+                    `);
+                    break;
+
+                case 'bio':
+                    appendOutput(`
+👤 CREATOR DOSSIER // VIRAL CODER:
+  • Real Name:   Mukul Raghav (@viral.coder)
+  • Followers:   368,000+ Developers
+  • Mission:     Demystifying algorithms, full-stack tools, & side-hustles
+  • Top Skills:  JavaScript, Python, Next.js, Android/Java, UI Animations
+  • Repo Hub:    github.com/mukul2428
+                    `);
+                    break;
+
+                case 'quote':
+                    const quotes = [
+                        `"There are only 10 types of people in the world: those who understand binary, and those who don't."`,
+                        `"Programming is the art of telling another human being what one wants the computer to do." — Donald Knuth`,
+                        `"It compiles on my machine. Ships to production!"`,
+                        `"Before software can be reusable it first has to be usable." — Ralph Johnson`,
+                        `"Deleted code is debugged code." — Jeff Sickel`
+                    ];
+                    const q = quotes[Math.floor(Math.random() * quotes.length)];
+                    appendOutput(`💬 <em>${q}</em>`);
+                    break;
+
+                default:
+                    appendOutput(`⚠️ Command not found: '${cmd}'. Type <span class="cmd-hint">'help'</span> for reference.`);
+            }
+        }
+
+        function runHollywoodHack() {
+            appendOutput(`Initiating Quantum SSH Bypass to NASA orbital gateway...`);
+            let step = 0;
+            const messages = [
+                "[1/5] Spoofing BGP routing tables and bypassing Cloudflare WAF...",
+                "[2/5] Brute-forcing 4096-bit RSA satellite telemetry encryption keys...",
+                "[3/5] Injecting zero-day payload into ISS environmental telemetry daemon...",
+                "[4/5] Root shell acquired. Dumping orbital trajectory manifests...",
+                "🚀 ACCESS GRANTED. NASA Satellite Gateway under local terminal control!"
+            ];
+
+            const interval = setInterval(() => {
+                if (step < messages.length) {
+                    playBeep(300 + step * 250, "sawtooth", 0.08);
+                    appendOutput(messages[step]);
+                    step++;
+                } else {
+                    clearInterval(interval);
+                    appendOutput("<span style='color:#ffff00; font-weight:bold;'>⚠️ Warning: Simulation concluded. Do not try this at home! 😉</span>");
+                }
+            }, 600);
+        }
+
+        function runScan(target) {
+            appendOutput(`Starting Nmap scan on target: <strong>${target}</strong>`);
+            setTimeout(() => appendOutput(`Host ${target} is UP (0.0014s latency)`), 300);
+            setTimeout(() => appendOutput(`PORT 22/tcp   OPEN  OpenSSH 9.2p1 (Debian)`), 600);
+            setTimeout(() => appendOutput(`PORT 80/tcp   OPEN  nginx/1.24.0 (Reverse Proxy)`), 900);
+            setTimeout(() => appendOutput(`PORT 443/tcp  OPEN  ssl/https TLSv1.3`), 1200);
+            setTimeout(() => appendOutput(`PORT 5432/tcp OPEN  PostgreSQL Database Server`), 1500);
+            setTimeout(() => appendOutput(`✅ Scan complete: 4 open ports discovered. No critical vulnerabilities found.`), 1800);
+        }
+
+        // MATRIX RAIN CANVAS ENGINE
+        function toggleMatrix() {
+            matrixActive = !matrixActive;
+            if (matrixActive) {
+                matrixCanvas.style.display = 'block';
+                startMatrix();
+                appendOutput("🟢 Matrix digital rain: <strong style='color:#00ff66;'>ENABLED</strong> (Type 'matrix' again to toggle)");
+            } else {
+                matrixCanvas.style.display = 'none';
+                clearInterval(matrixInterval);
+                appendOutput("⚪ Matrix digital rain: <strong style='color:#94a3b8;'>DISABLED</strong>");
+            }
+        }
+
+        function startMatrix() {
+            const ctxM = matrixCanvas.getContext('2d');
+            matrixCanvas.width = window.innerWidth;
+            matrixCanvas.height = window.innerHeight;
+
+            const chars = "ｦｱｳｴｵｶｷｹｹｺｻｼｽｾｿﾀﾂﾃﾅﾆﾇﾈﾊﾋﾎﾏﾐﾑﾒﾓﾔﾕﾗﾘﾜ1234567890ABCDEF$#@%*+";
+            const fontSize = 16;
+            const columns = Math.floor(matrixCanvas.width / fontSize);
+            const drops = Array(columns).fill(1);
+
+            matrixInterval = setInterval(() => {
+                ctxM.fillStyle = "rgba(5, 10, 6, 0.08)";
+                ctxM.fillRect(0, 0, matrixCanvas.width, matrixCanvas.height);
+
+                ctxM.fillStyle = getComputedStyle(document.body).getPropertyValue('--term-green');
+                ctxM.font = fontSize + "px monospace";
+
+                for (let i = 0; i < drops.length; i++) {
+                    const text = chars[Math.floor(Math.random() * chars.length)];
+                    ctxM.fillText(text, i * fontSize, drops[i] * fontSize);
+
+                    if (drops[i] * fontSize > matrixCanvas.height && Math.random() > 0.975) {
+                        drops[i] = 0;
+                    }
+                    drops[i]++;
+                }
+            }, 45);
+        }
+
+        window.addEventListener('resize', () => {
+            if (matrixActive) {
+                matrixCanvas.width = window.innerWidth;
+                matrixCanvas.height = window.innerHeight;
+            }
+        });
+    </script>
+</body>
+</html>
